@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.7.4",
-    "dialogs": "^2.0.1"
+    "dialogs": "^2.0.1",
+    "image-size": "^0.8.3"
   }
 }

@@ -1,7 +1,13 @@
+const pjson = require('../package.json');
 const path = require('path');
 const url = require('url');
+const fs = require('fs');
+
 const querystring = require('querystring');
 const electron = require('electron');
+const { remote } = electron;
+const { Menu, MenuItem } = remote;
+
 const Dialogs = require('dialogs');
 const dialogs = Dialogs();
 
@@ -20,3 +26,4 @@ function load_datastore(options) {
 window.prompt = function (title, cb) {
     dialogs.prompt(title, cb);
 };
+

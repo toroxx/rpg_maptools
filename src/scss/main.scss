@@ -30,95 +30,83 @@ body {
 }
 
 .itemForm {
+  $width: 700px;
+  $height: 400px;
+
   z-index: 10000;
   position: absolute;
   background-color: #fff;
-  width: 500px;
-  height: 400px;
+  width: $width;
+  height: $height;
   border: 5px solid #000;
   border-radius: 5px;
   left: 50%;
-  margin-left: -250px;
-  margin-top: -200px;
+  margin-left: -$width/2;
+  margin-top: -$height/2;
   top: 50%;
   display: none;
 }
 
 .itemlist {
+  align-content: flex-start;
   overflow: auto;
+  display: flex;
+  flex-wrap: wrap;
   width: 100%;
   height: 100%;
+
+  .item_tile {
+    margin: 5px;
+    flex-grow: 0;
+    flex-shrink: 0;
+
+    .selected .tile_layer_top {
+      background-color: rgba(255, 255, 0, 0.4);
+    }
+  }
 }
 
-.item {
-  padding: 5px;
-  border-bottom: 2px solid #000;
-  clear: both;
-  height: 87px;
-  position: relative;
-}
+$tile_size: 65px;
 
 .tile {
+  user-select: none;
   word-break: break-all;
   position: relative;
   background-color: #000;
-  width: 75px;
-  height: 75px;
+  width: $tile_size;
+  height: $tile_size;
   overflow: hidden;
+
+  @for $i from 1 through 10 {
+    .tile_layer#{$i} {
+      z-index: $i * 10;
+    }
+  }
+
+  .tile_layer_top {
+    z-index: 9900;
+    width: 100%;
+    height: 100%;
+  }
+  .tile_layers {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+  }
 }
 
-.item_btn {
-  padding-left: 80px;
-}
+.tiles {
+  .tile {
+    .tile_layer_top {
+      &:hover {
+        background-color: rgba($color: #ffff00, $alpha: 0.2);
+      }
+    }
 
-.item_info {
-  padding-left: 80px;
-
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-}
-
-.item_title {
-  padding-left: 80px;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.item_tile {
-  position: absolute;
-}
-
-.item_info_options {
-  display: inline-block;
-  font-size: 14px;
-  padding: 2px;
-}
-
-.tile_layer1 {
-  z-index: 10;
-}
-
-.tile_layer2 {
-  z-index: 20;
-}
-
-.tile_layer3 {
-  z-index: 30;
-}
-
-.tile_layer4 {
-  z-index: 40;
-}
-
-.tile_layer5 {
-  z-index: 50;
-}
-
-.tile_layer99 {
-  z-index: 9900;
-  width: 100%;
-  height: 100%;
+    &.selected .tile_layer_top {
+      background-color: rgba(255, 255, 0, 0.2);
+    }
+  }
 }
 
 .non_walkover {
@@ -141,29 +129,63 @@ body {
   border-bottom: 3px solid rgba(255, 0, 0, 0.8);
 }
 
-.tile_layers {
-  position: absolute;
-  left: 0px;
-  right: 0px;
-}
-
 .tiles {
   overflow: auto;
   width: 100%;
   height: 100%;
-}
 
-.tiles .row {
-  display: flex;
-}
+  .tile_corner {
+    width: 20px;
+    height: 20px;
 
-.row .col {
-  flex-grow: 0;
-  flex-shrink: 0;
-}
+    cursor: pointer;
+    background-color: rgba($color: #ffff00, $alpha: 0.2);
+    &:hover {
+      background-color: rgba($color: #ffff00, $alpha: 0.8);
+    }
+    &.active {
+      background-color: rgba($color: #ff0000, $alpha: 0.8);
+    }
+  }
+  .tile_head_top {
+    width: $tile_size;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    cursor: pointer;
+    background-color: rgba($color: #ffff00, $alpha: 0.2);
+    &:hover {
+      background-color: rgba($color: #ffff00, $alpha: 0.8);
+    }
+    &.active {
+      background-color: rgba($color: #ff0000, $alpha: 0.8);
+    }
+  }
 
-.selected .tile_layer99 {
-  background-color: rgba(255, 255, 0, 0.2);
+  .tile_head_left {
+    width: 20px;
+    height: $tile_size;
+    line-height: $tile_size;
+    text-align: center;
+
+    cursor: pointer;
+    background-color: rgba($color: #ffff00, $alpha: 0.2);
+    &:hover {
+      background-color: rgba($color: #ffff00, $alpha: 0.8);
+    }
+    &.active {
+      background-color: rgba($color: #ff0000, $alpha: 0.8);
+    }
+  }
+
+  .row {
+    display: flex;
+
+    .col {
+      flex-grow: 0;
+      flex-shrink: 0;
+    }
+  }
 }
 
 .editor {
@@ -173,7 +195,8 @@ body {
 }
 
 .items_panel {
-  padding-top: 27px;
+  resize: horizontal;
+  padding-top: 30px;
   position: relative;
   float: left;
   width: 25%;
