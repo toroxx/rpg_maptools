@@ -72,7 +72,7 @@ const ItemPanel = (props) => {
             <div className="title_bar">
                 <b>&nbsp; ITEMS </b>
 
-                <a  style={{cursor:'pointer'}} onClick={() => { setEditItem("") }}>&#10133;</a>
+                <a style={{ cursor: 'pointer' }} onClick={() => { setEditItem("") }}>&#10133;</a>
             </div>
             <div className="itemlist">
                 {Object.keys(tiledata).map((k) => {

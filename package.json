@@ -1,16 +1,16 @@
 {
   "name": "maptool",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "babel": "babel",
-    "prodbuild": "webpack",
+    "prodbuild": "webpack --mode=production",
     "devbuild": "webpack --mode=development",
     "devwatch": "webpack --mode=development --watch",
     "start": "electron .",
-    "build": "electron-packager . RPG --platform=win32 --arch=x64 --icon=icons/Mushroom.ico --out=dist --ignore=node_modules/electron-* --version-string.CompanyName=RPG --version-string.ProductName=RPG"
+    "build": "electron-packager . MapTools --overwrite --platform=win32 --arch=x64 --icon=icons/Mushroom.ico --out=dist --ignore=node_modules/electron-* --version-string.CompanyName=MapTools --version-string.ProductName=MapTools"
   },
   "author": "Lawrence Lau",
   "license": "MIT",
@@ -20,11 +20,9 @@
     "@babel/preset-env": "^7.7.4",
     "@babel/preset-react": "^7.7.4",
     "babel-loader": "^8.0.6",
-    "bootstrap": "^4.4.1",
     "css-loader": "^3.2.0",
     "electron": "^8.2.1",
     "electron-packager": "^14.1.1",
-    "extract-text-webpack-plugin": "^3.0.2",
     "node-sass": "^4.13.0",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
@@ -37,6 +35,7 @@
   "dependencies": {
     "@babel/runtime": "^7.7.4",
     "dialogs": "^2.0.1",
+    "dotenv": "^8.2.0",
     "image-size": "^0.8.3"
   }
 }

@@ -41,9 +41,10 @@ body {
   border: 5px solid #000;
   border-radius: 5px;
   left: 50%;
-  margin-left: -$width/2;
-  margin-top: -$height/2;
   top: 50%;
+  transform: translate(-50%, -50%);
+  transition: height 0.4s ease-in-out, transform 0.4s ease-in-out;
+
   display: none;
 }
 

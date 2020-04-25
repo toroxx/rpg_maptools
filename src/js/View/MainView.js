@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import * as File from '../Lib/File';
+import * as Util from '../Lib/Util';
 import * as Elements from "../Elements";
 const { getCurrentWindow, Menu } = electron.remote;
 
@@ -15,6 +16,7 @@ const menu_template = (menu_callback) => {
         {
             label: '&Files',
             submenu: [
+                { label: 'New Map', accelerator: 'CmdOrCtrl+N', click: menu_callback },
                 { label: 'Load Map', accelerator: 'CmdOrCtrl+L', click: menu_callback },
                 { label: 'Save Map', accelerator: 'CmdOrCtrl+S', click: menu_callback },
                 { type: 'separator' },
@@ -31,7 +33,18 @@ const menu_template = (menu_callback) => {
         {
             label: '&Help',
             submenu: [
-                { label: 'Version: ' + pjson.version }
+                { label: 'Version: ' + pjson.version },
+                { type: 'separator' },
+                {
+                    label: 'Reload', click: () => {
+                        getCurrentWindow().reload();
+                    }
+                },
+                {
+                    label: 'DevTool', click: () => {
+                        getCurrentWindow().openDevTools();
+                    }
+                }
             ]
         }
     ];
@@ -44,8 +57,8 @@ const MainView = (props) => {
     const { elements } = props;
     const DEFAULT_MAP = [['-void-', '-void-'], ['-void-', '-void-']];
     const DEFAULT_ITEM = { "-void-": { layers: null } };
-
-    const [openfilename, setFilename] = useState('map.json');
+    const DEFAULT_FILENAME = 'map.json';
+    const [openfilename, setFilename] = useState(DEFAULT_FILENAME);
 
     const [mapdata, setMapData] = useState(DEFAULT_MAP);
     const [tiledata, setTileData] = useState(DEFAULT_ITEM);
@@ -79,22 +92,26 @@ const MainView = (props) => {
     }, [mapdata, tiledata]);
 
 
+
     const makeTileCache = (tiledata) => {
         let cache = {};
         for (let k in tiledata) {
             const i = tiledata[k];
             let html = [];
 
+            let layers_text = "";
             if (i['layers'] != null) {
                 let layers = i['layers'];
                 for (let i = 0; i < 5; i++) {
                     if (layers[i] == void (0)) {
                         continue;
                     }
-                    let { bg = null, id = null, zIndex = 1 } = layers[i];
+                    let { bg = null, id = null, zIndex = 1, name = "" } = layers[i];
                     if (bg == null || id == null) {
                         continue;
                     }
+
+                    layers_text += "\nzIndex: " + zIndex + ", bg:" + bg + ", id:" + id + ", name:" + name
 
                     html.push(['layer', (tile_display_size) => {
                         const { path, row_per_tile, tile_size, width, height } = elements[bg];
@@ -104,35 +121,19 @@ const MainView = (props) => {
 
                         return <img key={'tile_layer' + (i + 1)} src={path}
                             style={{ width: (width * scale) + "px", left: '-' + col + 'px', top: '-' + row + 'px', zIndex: zIndex }}
-                            className={'tile_layer' + (i + 1) + ' tile_layers'} />
+                            className={'tile_layer' + (i + 1) + ' tile_layers z' + zIndex} />
                     }]);
                 }
             }
 
-            let effclass = [];
-
-            if (i['walkover'] === void (0) || i['walkover'] != true) {
-                effclass.push("non_walkover");
-            }
-            if (i['moveleft'] == false) {
-                effclass.push("non_moveleft");
-            }
-            if (i['moveright'] == false) {
-                effclass.push("non_moveright");
-            }
-            if (i['moveup'] == false) {
-                effclass.push("non_moveup");
-            }
-            if (i['movedown'] == false) {
-                effclass.push("non_movedown");
-            }
+            let effclass = Util.tileOptionClasses([], i)
 
             html.push(['top', () => {
 
                 return <div style={{
                     fontWeight: 'bold', 'fontSize': '8px', 'color': k == '-void-' ? '#fff' : '#000'
                 }}
-                    key={'tile_layer_top'} title={`${k}\n${effclass}`} className={[...effclass, "tile_layers", "tile_layer_top"].join(' ')} >
+                    key={'tile_layer_top'} title={`${k}\n${effclass}${layers_text}`} className={[...effclass, "tile_layers", "tile_layer_top"].join(' ')} >
                     {k}
                 </div>
             }]);
@@ -143,6 +144,12 @@ const MainView = (props) => {
 
     const menu_callback = (e) => {
         switch (e.label) {
+            case 'New Map':
+                setFilename(DEFAULT_FILENAME);
+                setMap(DEFAULT_MAP);
+                setTiles(DEFAULT_ITEM);
+                setEditItem(null);
+                break;
             case 'Load Map':
                 const result = File.load();
                 if (result) {
@@ -170,7 +177,17 @@ const MainView = (props) => {
         styles.forEach(e => {
             document.querySelectorAll('.' + e).forEach(p => {
                 p.style.borderWidth = $yes ? "3px" : '0px';
+
             });
+        });
+
+        document.querySelectorAll('.tile_layer_top').forEach(p => {
+            if (p.innerHTML == '-void-') {
+                p.style.color = $yes ? "#fff" : 'transparent';
+            } else {
+                p.style.color = $yes ? "#000" : 'transparent';
+            }
+
         });
     }
 
@@ -184,7 +201,7 @@ const MainView = (props) => {
                     selectedItem, setSelectedItem,
                     editItem, setEditItem
                 }} />
-                <Elements.MapPanel {...{ ...props, tileCache, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem }} />
+                <Elements.MapPanel {...{ ...props, tileCache, tiledata, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem, editItem, setEditItem }} />
             </div>
         </div>
     );

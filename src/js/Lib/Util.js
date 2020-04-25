@@ -2,7 +2,7 @@
 const { app: ele_app, BrowserWindow, ipcRenderer } = electron.remote;
 const rootpath = ele_app.getAppPath();
 
-const assets_path = path.join(rootpath, '/assets/');
+const assets_path = window.env.ASSETS_PATH || '';
 
 export function preload_img(filepath, callback) {
     const img = document.createElement('img');
@@ -16,6 +16,26 @@ export function preload_img(filepath, callback) {
         }
     }
 };
+
+export function tileOptionClasses(effclass, option) {
+    let i = option;
+    if (i['walkover'] === void (0) || i['walkover'] != true) {
+        effclass.push("non_walkover");
+    }
+    if (i['moveleft'] == false) {
+        effclass.push("non_moveleft");
+    }
+    if (i['moveright'] == false) {
+        effclass.push("non_moveright");
+    }
+    if (i['moveup'] == false) {
+        effclass.push("non_moveup");
+    }
+    if (i['movedown'] == false) {
+        effclass.push("non_movedown");
+    }
+    return effclass;
+}
 
 
 export function load_asset_resources(folder) {
@@ -50,7 +70,7 @@ export function getMenuItem(menu_template, menu, submenu) {
     for (let k in menu_template) {
         if (menu == menu_template[k].label) {
             let menu_item = menu_template[k];
-            if (submenu == void(0)) {
+            if (submenu == void (0)) {
                 return menu_item;
             } else {
                 for (let k2 in menu_item.submenu) {

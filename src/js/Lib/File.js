@@ -34,7 +34,7 @@ function save(filename, data) {
         return false;
     }
 
-    fs.writeFileSync(file_path, data, { encoding: 'utf8', flag: 'w' });
+    fs.writeFileSync(file_path, data, { encoding: 'utf8', flag: 'w+' });
 
     dialog.showMessageBoxSync(getCurrentWindow(), {
         'type': 'info',

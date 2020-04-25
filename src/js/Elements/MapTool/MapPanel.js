@@ -6,8 +6,9 @@ let ctrl_pressed = false;
 
 const MapPanel = (props) => {
 
-    const { tileCache, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem } = props;
+    const { tileCache, tiledata, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem, editItem, setEditItem } = props;
 
+    const [leveldisplays, setLeveldisplays] = useState({});
     useEffect(() => {
         window.addEventListener("keyup", (e) => {
             ctrl_pressed = false;
@@ -28,6 +29,17 @@ const MapPanel = (props) => {
             ele.classList.add('selected');
         })
     }, [selectedTiles]);
+
+    useEffect(() => {
+        for (let k in leveldisplays) {
+            document.querySelector('.tiles').querySelectorAll('.tile').forEach(e => {
+                e.querySelectorAll('.z' + k).forEach(e2 => {
+                    e2.style.display = leveldisplays[k] ? 'block' : 'none';
+                });
+            });
+
+        }
+    }, [leveldisplays])
 
     function select_tile(target, x, y, append) {
         let item = [target, x, y]
@@ -57,22 +69,38 @@ const MapPanel = (props) => {
         let tmpMap = [];
         switch (action) {
             case 'Insert Row':
-                mapdata.forEach((v, py) => {
-                    if (py == y) {
-                        tmpMap.push(empty_row);
+                dialogs.prompt('Insert Row', 1, ok => {
+                    if (ok) {
+                        let count = parseInt(ok);
+                        mapdata.forEach((v, py) => {
+                            if (py == y) {
+                                for (let i = 0; i < count; i++) {
+                                    tmpMap.push(empty_row);
+                                }
+                            }
+                            tmpMap.push(v);
+                        })
+                        setMap(tmpMap);
+
                     }
-                    tmpMap.push(v);
-                })
-                setMap(tmpMap);
+                });
+
                 break;
             case 'Append Row':
-                mapdata.forEach((v, py) => {
-                    tmpMap.push(v);
-                    if (py == y) {
-                        tmpMap.push(empty_row);
+                dialogs.prompt('Append Row', 1, ok => {
+                    if (ok) {
+                        let count = parseInt(ok);
+                        mapdata.forEach((v, py) => {
+                            tmpMap.push(v);
+                            if (py == y) {
+                                for (let i = 0; i < count; i++) {
+                                    tmpMap.push(empty_row);
+                                }
+                            }
+                        })
+                        setMap(tmpMap);
                     }
-                })
-                setMap(tmpMap);
+                });
                 break;
             case 'Delete Row':
                 mapdata.forEach((v, py) => {
@@ -95,30 +123,46 @@ const MapPanel = (props) => {
                 }
                 break;
             case 'Insert Col':
-                mapdata.forEach((cols, py) => {
-                    let tmp = [];
-                    cols.forEach((col, px) => {
-                        if (px == x) {
-                            tmp.push('-void-');
-                        }
-                        tmp.push(col);
-                    })
-                    tmpMap.push(tmp);
+                dialogs.prompt('Append Row', 1, ok => {
+                    if (ok) {
+                        let count = parseInt(ok);
+
+                        mapdata.forEach((cols, py) => {
+                            let tmp = [];
+                            cols.forEach((col, px) => {
+                                if (px == x) {
+                                    for (let i = 0; i < count; i++) {
+                                        tmp.push('-void-');
+                                    }
+                                }
+                                tmp.push(col);
+                            })
+                            tmpMap.push(tmp);
+                        });
+                        setMap(tmpMap);
+                    }
                 });
-                setMap(tmpMap);
                 break;
             case 'Append Col':
-                mapdata.forEach((cols, py) => {
-                    let tmp = [];
-                    cols.forEach((col, px) => {
-                        tmp.push(col);
-                        if (px == x) {
-                            tmp.push('-void-');
-                        }
-                    })
-                    tmpMap.push(tmp);
+                dialogs.prompt('Append Row', 1, ok => {
+                    if (ok) {
+                        let count = parseInt(ok);
+
+                        mapdata.forEach((cols, py) => {
+                            let tmp = [];
+                            cols.forEach((col, px) => {
+                                tmp.push(col);
+                                if (px == x) {
+                                    for (let i = 0; i < count; i++) {
+                                        tmp.push('-void-');
+                                    }
+                                }
+                            })
+                            tmpMap.push(tmp);
+                        });
+                        setMap(tmpMap);
+                    }
                 });
-                setMap(tmpMap);
                 break;
             case 'Delete Col':
                 mapdata.forEach((cols, py) => {
@@ -217,10 +261,16 @@ const MapPanel = (props) => {
 
         const node = e.target.parentNode;
         let tilename = node.getAttribute('data-tilename');
+        let tileid = node.getAttribute('data-tile_id');
         const menu4tile = new Menu()
         menu4tile.append(new MenuItem({ label: tilename, enabled: false }))
         menu4tile.append(new MenuItem({ type: 'separator' }))
         menu4tile.append(new MenuItem({ label: 'Copy Tile', click: () => { menu_callback('Copy Tile', node) } }))
+
+        if (tileid != "" && tileid != "-void-") {
+
+            menu4tile.append(new MenuItem({ label: 'Edit Tile', click: () => { setEditItem(tileid) } }))
+        }
 
         if (copied_object != null) {
             const { type = null, name } = copied_object;
@@ -231,17 +281,51 @@ const MapPanel = (props) => {
         menu4tile.popup({ window: remote.getCurrentWindow() })
     }
 
+    function level_control() {
+        let levels = {};
+        for (let y in mapdata) {
+            for (let x in mapdata[y]) {
+                const tile_id = mapdata[y][x];
+                const { layers = [] } = tiledata[tile_id] || {};
+                if (layers != null) {
+                    layers.forEach(({ zIndex = 1 }) => {
+                        if (levels[zIndex] == void (0)) {
+                            levels[zIndex] = 0;
+                        }
+                        levels[zIndex]++;
+                    });
+                }
+            }
+        }
+
+        let html = [];
+        for (let y in levels) {
+            if (leveldisplays[y] == void (0)) {
+                leveldisplays[y] = 1;
+                setLeveldisplays({ ...leveldisplays });
+            }
+            html.push(<span key={html.length}>
+                {y} ({levels[y]}) <input type="checkbox" checked={leveldisplays[y] == 1 ? 'chekced' : null} onChange={(e) => {
+                    leveldisplays[y] = e.target.checked;
+                    setLeveldisplays({ ...leveldisplays });
+                }} /> &nbsp;| &nbsp;
+            </span>);
+        }
+        return html;
+    }
     return (
 
         <div className="map_panel">
 
             <div className="title_bar">
                 <div style={{ float: 'left' }}>
-                    <b>&nbsp; MAP</b>
+                    <b>&nbsp; MAP</b> &nbsp;&nbsp;
+                    Levels: &nbsp;&nbsp;
+                    <span>{level_control()}</span>
                 </div>
             </div>
 
-            <div className="tiles">
+            <div className="tiles" style={{ position: 'relative' }}>
                 <div key={`row_header`} className="row">
                     <div className="col tile_corner">&nbsp;</div>
                     {mapdata[0].map((tile_id, x) => {
