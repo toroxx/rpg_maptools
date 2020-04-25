@@ -4,7 +4,19 @@ import * as Util from '../Lib/Util';
 import * as Elements from "../Elements";
 const { getCurrentWindow, Menu } = electron.remote;
 
-const menu_template = (menu_callback) => {
+const menu_template = (menu_callback, opened_files) => {
+
+    let opened = [];
+    let i = 1;
+    for (let k in opened_files) {
+        let { path } = opened_files[k];
+        opened.push({ label: i + ". " + path, click: (e) => { menu_callback('OpenFile', e, path) }});
+        i++;
+    }
+    if (opened.length == 0) {
+        opened.push({ label: 'No Recent File', disabled:true });
+    }
+
     const isMac = process.platform === 'darwin';
     return [
         ...(isMac ? [{
@@ -16,9 +28,12 @@ const menu_template = (menu_callback) => {
         {
             label: '&Files',
             submenu: [
-                { label: 'New Map', accelerator: 'CmdOrCtrl+N', click: menu_callback },
-                { label: 'Load Map', accelerator: 'CmdOrCtrl+L', click: menu_callback },
-                { label: 'Save Map', accelerator: 'CmdOrCtrl+S', click: menu_callback },
+                { label: 'New Map', accelerator: 'CmdOrCtrl+N', click: (e) => { menu_callback('New Map', e) } },
+                { label: 'Load Map', accelerator: 'CmdOrCtrl+L', click: (e) => { menu_callback('Load Map', e) } },
+                { label: 'Save Map', accelerator: 'CmdOrCtrl+S', click: (e) => { menu_callback('Save Map', e) } },
+                { type: 'separator' },
+
+                ...opened,
                 { type: 'separator' },
                 isMac ? { role: 'close' } : { role: 'quit' }
             ]
@@ -27,7 +42,7 @@ const menu_template = (menu_callback) => {
             label: '&View',
             submenu: [
                 //{ label: 'Show Lines', click: menu_callback },
-                { label: 'Show Guides', type: "checkbox", checked: true, click: menu_callback },
+                { label: 'Show Guides', type: "checkbox", checked: true, click: (e) => { menu_callback("Show Guides", e) } },
             ],
         },
         {
@@ -54,7 +69,7 @@ const menu_template = (menu_callback) => {
 
 
 const MainView = (props) => {
-    const { elements } = props;
+    const { elements, db } = props;
     const DEFAULT_MAP = [['-void-', '-void-'], ['-void-', '-void-']];
     const DEFAULT_ITEM = { "-void-": { layers: null } };
     const DEFAULT_FILENAME = 'map.json';
@@ -76,11 +91,16 @@ const MainView = (props) => {
     }
 
     useEffect(() => {
-        menu_tmpl = menu_template(menu_callback);
-        Menu.setApplicationMenu(Menu.buildFromTemplate(menu_tmpl));
+        db.find({}, (err, docs) => {
+            menu_tmpl = menu_template(menu_callback, docs);
+            Menu.setApplicationMenu(Menu.buildFromTemplate(menu_tmpl));
+        })
+
     }, []);
 
     useEffect(() => {
+        //menu_tmpl = menu_template(menu_callback, db);
+        //Menu.setApplicationMenu(Menu.buildFromTemplate(menu_tmpl));
         getCurrentWindow().setTitle('MapTools v' + pjson.version + ' Filename: ' + openfilename);
     }, [openfilename]);
 
@@ -89,8 +109,11 @@ const MainView = (props) => {
     }, [mapdata, tiledata]);
 
 
-    const menu_callback = (e) => {
-        switch (e.label) {
+    const menu_callback = (mode, e, params = {}) => {
+        switch (mode) {
+            case "OpenFile":
+                console.log(params)
+                break;
             case 'New Map':
                 setFilename(DEFAULT_FILENAME);
                 setMap(DEFAULT_MAP);
@@ -100,12 +123,13 @@ const MainView = (props) => {
             case 'Load Map':
                 const result = File.load();
                 if (result) {
-                    const [filename, mapjson] = result;
+                    const [filepath, filename, mapjson] = result;
                     const { map = DEFAULT_MAP, item = DEFAULT_ITEM } = JSON.parse(mapjson);
                     setFilename(filename);
                     setMap(map);
                     setTiles(item);
                     setEditItem(null);
+                    //db.save()
                 }
                 break;
             case 'Save Map':

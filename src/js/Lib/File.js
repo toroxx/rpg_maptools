@@ -15,7 +15,7 @@ function load(filename) {
         return false;
     }
 
-    return [path.basename(file_path[0]), fs.readFileSync(file_path[0], { encoding: 'utf8', flag: 'r' })];
+    return [file_path, path.basename(file_path[0]), fs.readFileSync(file_path[0], { encoding: 'utf8', flag: 'r' })];
 }
 
 function save(filename, data) {
