@@ -1,3 +1,13 @@
+:root {
+  --guide-red: rgba(255, 0, 0, 0.8);
+  --guide-blue: #0000ff;
+  --items-panel-width: 250px;
+  --map-panel-header-top-height: 20px;
+  --map-panel-header-left-width: 20px;
+  --tile-size: 65px;
+  --panel-header: 30px;
+}
+
 html {
   height: 100%;
 }
@@ -8,6 +18,7 @@ html {
 }
 
 * {
+  user-select: none;
   box-sizing: border-box;
 }
 
@@ -15,6 +26,7 @@ body {
   padding: 0 0 0 0;
   margin: 0px;
   height: 100%;
+  overflow: hidden;
   position: relative;
 }
 
@@ -33,7 +45,7 @@ body {
   $width: 700px;
   $height: 400px;
 
-  z-index: 10000;
+  z-index: 30000;
   position: absolute;
   background-color: #fff;
   width: $width;
@@ -67,15 +79,13 @@ body {
   }
 }
 
-$tile_size: 65px;
-
 .tile {
   user-select: none;
   word-break: break-all;
   position: relative;
   background-color: #000;
-  width: $tile_size;
-  height: $tile_size;
+  width: var(--tile-size);
+  height: var(--tile-size);
   overflow: hidden;
 
   @for $i from 1 through 10 {
@@ -85,9 +95,13 @@ $tile_size: 65px;
   }
 
   .tile_layer_top {
-    z-index: 9900;
+    z-index: 10000;
     width: 100%;
     height: 100%;
+    div {
+      width: 100%;
+      height: 100%;
+    }
   }
   .tile_layers {
     position: absolute;
@@ -111,23 +125,22 @@ $tile_size: 65px;
 }
 
 .non_walkover {
-  border: 3px solid rgba(255, 0, 0, 0.8);
+  border: 2px solid var(--guide-red);
 }
 
-.non_moveleft {
-  border-left: 3px solid rgba(255, 0, 0, 0.8);
-}
-
-.non_moveright {
-  border-right: 3px solid rgba(255, 0, 0, 0.8);
-}
-
-.non_moveup {
-  border-top: 3px solid rgba(255, 0, 0, 0.8);
-}
-
-.non_movedown {
-  border-bottom: 3px solid rgba(255, 0, 0, 0.8);
+$direction: (
+  "left": left,
+  "right": right,
+  "up": top,
+  "down": bottom,
+);
+@each $name, $style in $direction {
+  .non_move#{$name} {
+    border-#{$style}: 2px solid var(--guide-red);
+  }
+  .event#{$name} div {
+    border-#{$style}: 2px solid var(--guide-blue);
+  }
 }
 
 .tiles {
@@ -136,22 +149,27 @@ $tile_size: 65px;
   height: 100%;
 
   .tile_corner {
-    width: 20px;
-    height: 20px;
+    width: var(--map-panel-header-left-width);
+    height: var(--map-panel-header-top-height);
+
+    position: absolute;
+    left: 0px;
+    top: var(--panel-header);
 
     cursor: pointer;
-    background-color: rgba($color: #ffff00, $alpha: 0.2);
+    background-color: rgba($color: #ffff00, $alpha: 0.8);
+    z-index: 100;
     &:hover {
-      background-color: rgba($color: #ffff00, $alpha: 0.8);
+      background-color: rgba($color: #ffff00, $alpha: 1);
     }
     &.active {
       background-color: rgba($color: #ff0000, $alpha: 0.8);
     }
   }
   .tile_head_top {
-    width: $tile_size;
-    height: 20px;
-    line-height: 20px;
+    width: var(--tile-size);
+    height: var(--map-panel-header-top-height);
+    line-height: var(--map-panel-header-top-height);
     text-align: center;
     cursor: pointer;
     background-color: rgba($color: #ffff00, $alpha: 0.2);
@@ -164,10 +182,11 @@ $tile_size: 65px;
   }
 
   .tile_head_left {
-    width: 20px;
-    height: $tile_size;
-    line-height: $tile_size;
+    width: var(--map-panel-header-left-width);
+    height: var(--tile-size);
+    line-height: var(--tile-size);
     text-align: center;
+    left: 0;
 
     cursor: pointer;
     background-color: rgba($color: #ffff00, $alpha: 0.2);
@@ -197,30 +216,62 @@ $tile_size: 65px;
 
 .items_panel {
   resize: horizontal;
-  padding-top: 30px;
+  padding-top: var(--panel-header);
   position: relative;
   float: left;
-  width: 25%;
-  border-right: 2px solid #000;
+  width: var(--items-panel-width);
   height: 100%;
+
+  .itemlist {
+    width: calc(100% - 3px);
+  }
+
+  .resizebar {
+    position: absolute;
+    height: 100%;
+    right: 0px;
+    top: 0px;
+    cursor: col-resize;
+    width: 3px;
+    background-color: #000;
+  }
 }
 
 .map_panel {
-  padding-top: 30px;
+  overflow: hidden;
+  padding-top: calc(var(--panel-header) + var(--map-panel-header-top-height));
+  padding-left: var(--map-panel-header-left-width);
   position: relative;
 
   float: right;
-  width: 75%;
+  width: calc(100% - var(--items-panel-width));
   height: 100%;
+  .tiles {
+    .heading {
+      padding-left: var(--map-panel-header-left-width);
+      position: absolute;
+      left: 0;
+      top: var(--panel-header);
+    }
+    .heading-left {
+      position: absolute;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      top: calc(var(--panel-header) + var(--map-panel-header-top-height));
+    }
+  }
 }
 
 .title_bar {
-  line-height: 30px;
-  height: 30px;
+  overflow: hidden;
+  line-height: var(--panel-header);
+  height: var(--panel-header);
   width: 100%;
   top: 0px;
+  left: 0;
   position: absolute;
-  z-index: 10000;
+  z-index: 20000;
   background-color: blue;
   color: #fff;
   clear: both;

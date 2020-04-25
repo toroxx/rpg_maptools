@@ -42,7 +42,7 @@ function save(filename, data) {
         'message': 'Map File Saved: ' + file_path,
 
     });
-    return [path.basename(file_path[0])]
+    return [path.basename(file_path)]
 
 }
 

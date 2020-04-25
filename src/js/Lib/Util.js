@@ -1,4 +1,4 @@
-
+import React, { useState, useEffect } from "react";
 const { app: ele_app, BrowserWindow, ipcRenderer } = electron.remote;
 const rootpath = ele_app.getAppPath();
 
@@ -34,7 +34,80 @@ export function tileOptionClasses(effclass, option) {
     if (i['movedown'] == false) {
         effclass.push("non_movedown");
     }
+    if (i['eventdown'] == true) {
+        effclass.push("eventdown");
+    }
+    if (i['eventleft'] == true) {
+        effclass.push("eventleft");
+    }
+    if (i['eventup'] == true) {
+        effclass.push("eventup");
+    }
+    if (i['eventright'] == true) {
+        effclass.push("eventright");
+    }
+    if (i['autostart_ani'] == true) {
+        effclass.push("autostart_ani");
+    }
     return effclass;
+}
+
+
+export function makeTileCache(elements, tiledata) {
+    let cache = {};
+    for (let k in tiledata) {
+        cache[k] = makeTileLayers(elements, k, tiledata[k]);
+    }
+    return cache;
+}
+
+export function makeTileLayers(elements, k, i) {
+    let html = [];
+    let layers_text = "";
+    if (i['layers'] != null) {
+        let layers = i['layers'];
+        for (let i = 0; i < 5; i++) {
+            if (layers[i] == void (0)) {
+                continue;
+            }
+            let { bg = null, id = null, zIndex = 1, name = "", ani = "" } = layers[i];
+            if (bg == null || id == null) {
+                continue;
+            }
+
+            layers_text += "\nzIndex: " + zIndex + ", " + bg + " (" + id + "), name:" + name + ", ani:" + ani;
+
+            let layer_type = ani != "" ? 'layer' : 'ani';
+            html.push([layer_type, (tile_display_size) => {
+                const { path, row_per_tile, tile_size, width, height, getXYByID, getScale } = elements[bg];
+                const { x, y } = getXYByID(id);
+                const scale = getScale(tile_display_size);
+
+                return <img data-name={name} data-ani={ani} key={'tile_layer' + (i + 1)} src={path}
+                    style={{
+                        width: (width * scale) + "px",
+                        position: 'absolute',
+                        left: '-' + (x * tile_display_size) + 'px',
+                        top: '-' + (y * tile_display_size) + 'px',
+                        zIndex: zIndex
+                    }}
+                    className={['tile_layer' + (i + 1), 'tile_layers', 'z' + zIndex, name, "t" + layer_type].join(' ')} />
+            }]);
+        }
+    }
+
+    let effclass = tileOptionClasses([], i)
+    html.push(['top', () => {
+
+        return <div style={{
+            fontWeight: 'bold', 'fontSize': '8px', 'color': k == '-void-' ? '#fff' : '#000',
+            'width': '100%', 'height': '100%', zIndex: 9900
+        }}
+            key={'tile_layer_top'} title={`${k}\n${effclass}${layers_text}`} className={[...effclass, "tile_layers", "tile_layer_top"].join(' ')} >
+            <div style={{ padding: '2px' }}>{k}</div>
+        </div>
+    }]);
+    return html;
 }
 
 
@@ -51,18 +124,26 @@ export function load_asset_resources(folder) {
 
         if (filename != '' && row_per_tile > 0 && tile_size > 0) {
             const img_path = path.join(assets_path, '/' + folder + '/', filename);
+            let { width, height } = sizeOf(img_path);
+
             resources[name] = {
-                "path": img_path, filename, row_per_tile, tile_size
+                "path": img_path, filename, row_per_tile, tile_size, width, height,
+                wCount: Math.ceil(width / tile_size),
+                hCount: Math.ceil(height / tile_size),
+                getXYByID: (id) => {
+                    const row = Math.floor(id / row_per_tile);
+                    const col = (id % row_per_tile);
+                    return { y: row, x: col };
+                },
+                getScale: (tile_display_size) => {
+                    return tile_display_size / tile_size;
+                }
             }
 
-            preload_img(img_path, (img) => {
-                resources[name]['width'] = img.width;
-                resources[name]['height'] = img.height;
-            })
         }
     }
 
-
+    window.resources = resources;
     return resources;
 }
 

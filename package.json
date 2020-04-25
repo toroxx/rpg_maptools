@@ -1,6 +1,6 @@
 {
   "name": "maptool",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "",
   "main": "app.js",
   "scripts": {
@@ -36,6 +36,7 @@
     "@babel/runtime": "^7.7.4",
     "dialogs": "^2.0.1",
     "dotenv": "^8.2.0",
-    "image-size": "^0.8.3"
+    "image-size": "^0.8.3",
+    "nedb": "^1.8.0"
   }
 }

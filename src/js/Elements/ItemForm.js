@@ -2,68 +2,66 @@ import React, { useState, useEffect, useRef } from "react";
 import * as Util from '../Lib/Util';
 const { getCurrentWindow, dialog } = electron.remote;
 
-let options = { 'walkover': 0, 'movedown': 1, 'moveleft': 1, 'moveup': 1, 'moveright': 1 };
+let options = {
+    'walkover': 0, 'movedown': 1, 'moveleft': 1, 'moveup': 1, 'moveright': 1,
+    'autostart_ani': 0, 'eventdown': 0, 'eventleft': 0, 'eventup': 0, 'eventright': 0
+};
 
 
 
 const ItemTileSelector = (props) => {
     let { elements, txtbg, txtid, setID } = props;
 
-    let [scale, setScale] = useState(0);
-    let [wCount, setWCount] = useState(0);
-    let [hCount, setHCount] = useState(0);
 
-    let tile_selector = useRef(null);
-
-
+    let tile_size = 50;
 
     useEffect(() => {
-        if (elements[txtbg]) {
-            let { tile_size, width, height } = elements[txtbg];
-
-            setScale(width * 50 / tile_size);
-            setWCount(width / tile_size);
-            setHCount(height / tile_size);
-
-        }
-
+        console.log('Loading: ', txtbg);
     }, [txtbg, txtid]);
 
+    function load() {
+        let html = [];
+        if (elements[txtbg] == void (0)) {
+            return html;
+        }
+
+        let { width, height, wCount, hCount, getScale } = elements[txtbg];
+
+        for (let j = 0; j < hCount; j++) {
+
+            for (let i = 0; i < wCount; i++) {
+                const key = i + (j * wCount);
+                html.push(<div key={key} className={'t' + key}
+                    style={{
+                        border: txtid == key ? '1px solid #f00' : '1px solid #000',
+                        'float': 'left',
+                        'display': 'inline-block', position: 'relative',
+                        width: tile_size + 'px', height: tile_size + 'px', padding: '0px', overflow: 'hidden'
+                    }}
+                    onClick={() => setID(key)} >
+
+                    <img style={{
+                        position: 'absolute', width: width * getScale(tile_size) + 'px',
+                        left: '-' + (i * tile_size) + 'px', top: '-' + (j * tile_size) + 'px'
+                    }} src={elements[txtbg] && elements[txtbg]['path'] || null} />
+
+                    <div style={{
+                        position: 'absolute', fontSize: '8px', fontWeight: 'bold', width: '100%',
+                        height: "100%", backgroundColor: txtid == key ? 'rgba(255, 0, 0, 0.2)' : null
+                    }}>
+                        ID: {key}-{j}:{i}
+                    </div>
+                </div>)
+            }
+        }
+        return html;
+    }
 
     return (
-        <div ref={tile_selector} className="tile_selector" style={{
+        <div className="tile_selector" style={{
             'width': '90%', resize: 'both', 'clear': 'both',
             overflowX: 'hidden', overflowY: 'auto', 'height': '60px', border: '1px solid #000'
-        }}>
-
-            {[...Array(hCount)].map((y, j) => {
-                return [...Array(wCount)].map((x, i) => {
-                    const key = i + (j * wCount);
-                    return (<div key={key} className={'t' + key}
-                        style={{
-                            border: txtid == key ? '1px solid #f00' : '1px solid #000',
-                            'float': 'left',
-                            'display': 'inline-block', position: 'relative',
-                            width: '50px', height: '50px', padding: '0px', overflow: 'hidden'
-                        }}
-                        onClick={() => setID(key)} >
-
-                        <img style={{
-                            position: 'absolute', width: scale + 'px',
-                            left: '-' + (i * 50) + 'px', top: '-' + (j * 50) + 'px'
-                        }}
-                            src={elements[txtbg] && elements[txtbg]['path'] || null} />
-                        <div style={{
-                            position: 'absolute', fontSize: '8px', fontWeight: 'bold', width: '100%',
-                            height: "100%", backgroundColor: txtid == key ? 'rgba(255, 0, 0, 0.2)' : null
-                        }}>
-                            ID: {key}-{j}:{i}
-                        </div>
-                    </div>)
-                });
-            })}
-
-        </div>
+        }}>{load()}</div>
     );
 }
 
@@ -71,20 +69,26 @@ const ItemTileSelector = (props) => {
 const ItemLayer = (props) => {
     let { index, elements, layer, setTileLayer, removeTileLayer } = props;
 
-    const { bg, id = 0, zIndex = 1, name = "" } = layer;
+    const { bg, id = 0, zIndex = 1, name = "", ani = "" } = layer;
     let [txtbg, setBg] = useState(bg);
     let [txtid, setID] = useState(id);
     let [txtname, setName] = useState(name);
     let [txtzIndex, setZIndex] = useState(zIndex);
+    let [txtani, setAni] = useState(ani);
 
     useEffect(() => {
-        //console.log(11, txtbg, txtid, txtzIndex);
-        setTileLayer(index, { bg: txtbg, id: txtid, zIndex: txtzIndex, name: txtname });
-    }, [txtbg, txtid, txtzIndex, txtname]);
+        console.log('savelayer', txtbg, txtid, txtzIndex, txtani);
+        setTileLayer(index, {
+            bg: txtbg, id: txtid, zIndex: txtzIndex, name: txtname,
+            ani: txtani
+        });
+    }, [txtbg, txtid, txtzIndex, txtname, txtani]);
 
     return (<div className="layer">
         BG:&nbsp;
-        <select className="bg" defaultValue={txtbg} onChange={(e) => setBg(e.target.value)} >
+        <select className="bg" defaultValue={txtbg} onChange={(e) => {
+            if (e.target.value != '') { setBg(e.target.value) }
+        }} >
             <option></option>
             {Object.keys(elements).map((k2) => {
                 return (<option key={k2}>{k2}</option>);
@@ -102,6 +106,11 @@ const ItemLayer = (props) => {
         <input style={{ width: '50px' }} type="text" className="name"
             value={txtname} onChange={(e) => setName(e.target.value)} />
 
+        Ani Frm:&nbsp;
+        <input style={{ width: '50px' }} type="text" className="ani"
+            value={txtani} onChange={(e) => setAni(e.target.value)} />
+
+
 
         <button onClick={() => removeTileLayer(index)}>Del</button>
         <ItemTileSelector elements={elements} txtbg={txtbg} txtid={txtid} setID={setID} />
@@ -110,7 +119,8 @@ const ItemLayer = (props) => {
 
 
 const ItemForm = (props) => {
-    let { elements, tileCache, tiledata, setTiles, editItem, setEditItem } = props;
+    let { elements, tiledata, setTiles, editItem, setEditItem } = props;
+
     let [formdisplay, setformdisplay] = useState(false);
 
     let [tile_id, setTileID] = useState(editItem);
@@ -144,7 +154,6 @@ const ItemForm = (props) => {
             let tid = v.querySelector('input.id').value;
             let tile_selected = v.querySelector('.tile_selector').querySelector('.t' + tid);
 
-            console.log(tid, tile_selected);
             if (tile_selected) {
                 tile_selected.scrollIntoView(true);
             }
@@ -223,30 +232,21 @@ const ItemForm = (props) => {
                         </td>
                         <td valign="top" rowSpan="2">
                             Sample:<br />
-                            <div style={{
+                            <div className={'tile'} style={{
                                 backgroundColor: '#000',
                                 border: '1px solid #000',
                                 'display': 'inline-block', position: 'relative',
                                 width: '80px', height: '80px', padding: '0px', overflow: 'hidden'
                             }} >
-                                {tile_layers.map((tile_layer, i) => {
-                                    let { bg, id, zIndex = 1, name = "" } = tile_layer;
+                                {Util.makeTileLayers(elements, tile_id, { ...tile_options, 'layers': tile_layers }).map((v, i) => {
+                                    let [type, elemfunc = () => { }] = v;
 
-
-                                    if (elements[bg]) {
-                                        let { row_per_tile, tile_size, width, height } = elements[bg];
-                                        const row = Math.floor(id / row_per_tile) * 80;
-                                        const col = (id % row_per_tile) * 80;
-
-                                        return (<img className={name} key={i} style={{
-                                            position: 'absolute', width: (width * 80 / tile_size) + 'px',
-                                            left: '-' + col + 'px', top: '-' + row + 'px', zIndex: zIndex
-                                        }} src={elements[bg].path} />)
+                                    if (type == "top") {
+                                        return elemfunc();
                                     }
-
+                                    return elemfunc(80);
                                 })}
 
-                                <div style={{ width: '100%', 'height': '100%' }} className={Util.tileOptionClasses([], tile_options).join(' ')}> </div>
                             </div>
 
                         </td>
@@ -256,10 +256,13 @@ const ItemForm = (props) => {
                         <td>
                             <div className="options">
                                 {Object.keys(options).map((key) => {
-                                    let checked = (tile_options && tile_options[key]) ? 1 : 0;
-
+                                    let checked = options[key];
+                                    if ((tile_options && tile_options[key]) !== void (0)) {
+                                        checked = (tile_options && tile_options[key]);
+                                    }
+                                    //console.log(key, checked, options[key], (tile_options && tile_options[key]));
                                     return (
-                                        <div key={key} className="opt">
+                                        <div key={key} className="opt" style={{ display: 'inline-block', padding: '5px' }}>
                                             <b>{key}:</b>
                                             <input name={key} type="checkbox" checked={checked == 1}
                                                 onChange={(e) => setTileOption(key, e.target.checked ? 1 : 0)} />

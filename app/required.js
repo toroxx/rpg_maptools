@@ -1,7 +1,3 @@
-
-
-
-
 const pjson = require('../package.json');
 const path = require('path');
 const url = require('url');
@@ -15,6 +11,12 @@ const { Menu, MenuItem } = remote;
 
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
+//load db
+const dbpath = path.join(__dirname, '/resources/db/', 'db.json');
+const db = load_datastore({ filename: dbpath, autoload: true });
+db.loadDatabase();
+
+//load dialogs
 const Dialogs = require('dialogs')
 const dialogs = Dialogs()
 

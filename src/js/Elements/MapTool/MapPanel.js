@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from "react";
+import * as Util from '../../Lib/Util';
 import Tile from './Tile';
 
 let copied_object = null;
 let ctrl_pressed = false;
+let ani_clock = {};
+let ani_txtclock = {};
 
 const MapPanel = (props) => {
+    const { elements, tiledata, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem, editItem, setEditItem } = props;
 
-    const { tileCache, tiledata, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem, editItem, setEditItem } = props;
-
+    const tileCache = Util.makeTileCache(elements, tiledata);
     const [leveldisplays, setLeveldisplays] = useState({});
+
     useEffect(() => {
         window.addEventListener("keyup", (e) => {
             ctrl_pressed = false;
@@ -19,6 +23,88 @@ const MapPanel = (props) => {
             }
         })
     }, []);
+
+    useEffect(() => {
+        console.log('ani_clock:', ani_clock);
+        for (let k in ani_clock) {
+            clearInterval(ani_clock[k]);
+
+        }
+        ani_clock = {};
+        ani_txtclock = {};
+        console.log('Clocks clear');
+
+        let tile_ani_layer = {};
+        for (let v in tiledata) {
+
+            let { autostart_ani, layers } = tiledata[v];
+            if (autostart_ani == false || autostart_ani == void (0)) {
+                continue;
+            }
+
+            let anilayers = {};
+            for (let layer_index in layers) {
+                let { name = "", ani = "" } = layers[layer_index];
+                if (name == "" || ani == "") {
+                    continue;
+                }
+                anilayers[ani] = layers[layer_index];
+            }
+
+
+
+            if (Object.keys(anilayers).length > 1) {
+                const ordered = {};
+                Object.keys(anilayers).sort((a, b) => a.ani - b.ani).forEach(function (key) {
+                    ordered[key] = anilayers[key];
+                });
+                tile_ani_layer[v] = { layers: ordered, current: 1, total: Object.keys(anilayers).length };
+            }
+        }
+
+        let i = -1;
+        for (let v in tile_ani_layer) {
+            i++;
+            console.log('Clock: ' + v, ' start');
+            if (ani_txtclock[v] == void (0)) {
+                ani_txtclock[v] = 0;
+            }
+
+            let c = setInterval(() => {
+                ani_callback(tile_ani_layer[v], v, ani_txtclock[v]);
+                ani_txtclock[v] = (ani_txtclock[v] + 1) % 10;
+            }, 100);
+
+            ani_clock[v] = c;
+
+
+        }
+        console.log("ani_clock: ", ani_clock);
+    }, [tiledata])
+
+
+    function ani_callback(tile_ani_layer, v, txtClock) {
+        let { layers, current, total } = tile_ani_layer;
+        let anis = {};
+        let closest = 0;
+        for (let k in layers) {
+            let { name, ani } = layers[k];
+            ani = parseInt(ani);
+            anis[ani] = name;
+
+            if (txtClock > ani) {
+                closest = ani;
+            }
+
+        }
+        for (let ani in anis) {
+            document.querySelector('.tiles').querySelectorAll('.tile.' + v + ' .' + anis[ani]).forEach(e => {
+                e.style.display = ani == closest ? 'block' : 'none';
+            });
+        }
+
+    }
+
 
     useEffect(() => {
         document.querySelector('.tiles').querySelectorAll('.tile.selected').forEach(e => {
@@ -123,7 +209,7 @@ const MapPanel = (props) => {
                 }
                 break;
             case 'Insert Col':
-                dialogs.prompt('Append Row', 1, ok => {
+                dialogs.prompt('Append Col', 1, ok => {
                     if (ok) {
                         let count = parseInt(ok);
 
@@ -144,7 +230,7 @@ const MapPanel = (props) => {
                 });
                 break;
             case 'Append Col':
-                dialogs.prompt('Append Row', 1, ok => {
+                dialogs.prompt('Append Col', 1, ok => {
                     if (ok) {
                         let count = parseInt(ok);
 
@@ -259,7 +345,7 @@ const MapPanel = (props) => {
     function tile_menu(e) {
         e.preventDefault()
 
-        const node = e.target.parentNode;
+        const node = e.target.parentNode.parentNode;
         let tilename = node.getAttribute('data-tilename');
         let tileid = node.getAttribute('data-tile_id');
         const menu4tile = new Menu()
@@ -313,10 +399,25 @@ const MapPanel = (props) => {
         }
         return html;
     }
+
+
+    function makeTile(tile_id, x, y) {
+        return (<Tile key={`tile_${x}_${y}`} tile_id={tile_id} tile={tileCache[tile_id]} x={x} y={y}
+            onClick={(e) => {
+                if (e.target && e.target.parentNode && e.target.parentNode.parentNode) {
+                    select_tile(e.target.parentNode.parentNode, x, y);
+                }
+
+                if (selectedItem != null) {
+                    setTile(x, y, selectedItem);
+                }
+            }}
+            onContextMenu={(e) => tile_menu(e)}
+        />);
+    }
     return (
 
         <div className="map_panel">
-
             <div className="title_bar">
                 <div style={{ float: 'left' }}>
                     <b>&nbsp; MAP</b> &nbsp;&nbsp;
@@ -324,10 +425,17 @@ const MapPanel = (props) => {
                     <span>{level_control()}</span>
                 </div>
             </div>
+            <div className="tiles" onScroll={(e) => {
+                document.querySelector(".tiles .heading").style.left = -(e.target.scrollLeft) + 'px';
+                document.querySelector(".tiles .heading-left").style.top = -(e.target.scrollTop - e.target.offsetTop) + 'px';
+                console.log(e.target.scrollTop, e.target.scrollLeft);
+            }}>
 
-            <div className="tiles" style={{ position: 'relative' }}>
-                <div key={`row_header`} className="row">
-                    <div className="col tile_corner">&nbsp;</div>
+
+                <div className="col tile_corner">&nbsp;</div>
+
+                <div key={`row_header`} className="row heading">
+
                     {mapdata[0].map((tile_id, x) => {
                         return (<div key={`header_col_${x}`} data-tilename={'col-' + x} data-x={x}
                             className="col tile_head_top"
@@ -343,32 +451,23 @@ const MapPanel = (props) => {
                     })}
                 </div>
 
-                {mapdata.map((col, y) => (<div key={`row_${y}`} className="row">
-                    <div key={`header_row_${y}`} data-y={y} data-tilename={'row-' + y} className="col tile_head_left"
-                        onClick={(e) => {
-                            let tmp = [];
-                            document.querySelectorAll('.row_' + y).forEach((v) => {
-                                let dx = v.getAttribute('data-x') || 0;
-                                tmp.push([v, dx, y]);
-                            });
-                            setSelectedTiles(tmp);
-                        }}
-                        onContextMenu={(e) => header_left_menu(e)}>{y}</div>
-
-                    {col.map((tile_id, x) => {
-                        return (<Tile key={`tile_${x}_${y}`} tile_id={tile_id} tile={tileCache[tile_id]} x={x} y={y}
+                <div className="row heading-left">
+                    {mapdata.map((col, y) => (
+                        <div key={`header_row_${y}`} data-y={y} data-tilename={'row-' + y} className="col tile_head_left"
                             onClick={(e) => {
-                                if (e.target && e.target.parentNode) {
-                                    select_tile(e.target.parentNode, x, y);
-                                }
-
-                                if (selectedItem != null) {
-                                    setTile(x, y, selectedItem);
-                                }
+                                let tmp = [];
+                                document.querySelectorAll('.row_' + y).forEach((v) => {
+                                    let dx = v.getAttribute('data-x') || 0;
+                                    tmp.push([v, dx, y]);
+                                });
+                                setSelectedTiles(tmp);
                             }}
-                            onContextMenu={(e) => tile_menu(e)}
-                        />);
-                    })}
+                            onContextMenu={(e) => header_left_menu(e)}>{y}</div>
+                    ))}
+                </div>
+
+                {mapdata.map((col, y) => (<div key={`row_${y}`} className="row">
+                    {col.map((tile_id, x) => makeTile(tile_id, x, y))}
                 </div>))}
             </div>
         </div>

@@ -62,7 +62,6 @@ const MainView = (props) => {
 
     const [mapdata, setMapData] = useState(DEFAULT_MAP);
     const [tiledata, setTileData] = useState(DEFAULT_ITEM);
-    const [tileCache, setTileCache] = useState([]);
     const [selectedItem, setSelectedItem] = useState(null);
     const [editItem, setEditItem] = useState(null);
     const [selectedTiles, setSelectedTiles] = useState([]);
@@ -74,7 +73,6 @@ const MainView = (props) => {
     }
     const setTiles = (tiles) => {
         setTileData({ ...tiles });
-        setTileCache(makeTileCache(tiles));
     }
 
     useEffect(() => {
@@ -87,60 +85,9 @@ const MainView = (props) => {
     }, [openfilename]);
 
     useEffect(() => {
-        setTileCache(makeTileCache(tiledata));
         window.save_data = { map: mapdata, item: tiledata };
     }, [mapdata, tiledata]);
 
-
-
-    const makeTileCache = (tiledata) => {
-        let cache = {};
-        for (let k in tiledata) {
-            const i = tiledata[k];
-            let html = [];
-
-            let layers_text = "";
-            if (i['layers'] != null) {
-                let layers = i['layers'];
-                for (let i = 0; i < 5; i++) {
-                    if (layers[i] == void (0)) {
-                        continue;
-                    }
-                    let { bg = null, id = null, zIndex = 1, name = "" } = layers[i];
-                    if (bg == null || id == null) {
-                        continue;
-                    }
-
-                    layers_text += "\nzIndex: " + zIndex + ", bg:" + bg + ", id:" + id + ", name:" + name
-
-                    html.push(['layer', (tile_display_size) => {
-                        const { path, row_per_tile, tile_size, width, height } = elements[bg];
-                        const row = Math.floor(id / row_per_tile) * tile_display_size;
-                        const col = (id % row_per_tile) * tile_display_size;
-                        const scale = tile_display_size / tile_size;
-
-                        return <img key={'tile_layer' + (i + 1)} src={path}
-                            style={{ width: (width * scale) + "px", left: '-' + col + 'px', top: '-' + row + 'px', zIndex: zIndex }}
-                            className={'tile_layer' + (i + 1) + ' tile_layers z' + zIndex} />
-                    }]);
-                }
-            }
-
-            let effclass = Util.tileOptionClasses([], i)
-
-            html.push(['top', () => {
-
-                return <div style={{
-                    fontWeight: 'bold', 'fontSize': '8px', 'color': k == '-void-' ? '#fff' : '#000'
-                }}
-                    key={'tile_layer_top'} title={`${k}\n${effclass}${layers_text}`} className={[...effclass, "tile_layers", "tile_layer_top"].join(' ')} >
-                    {k}
-                </div>
-            }]);
-            cache[k] = html;
-        }
-        return cache;
-    }
 
     const menu_callback = (e) => {
         switch (e.label) {
@@ -163,7 +110,10 @@ const MainView = (props) => {
                 break;
             case 'Save Map':
                 let script = JSON.stringify(window.save_data).replace(/\],/g, "],\n");
-                File.save(openfilename, script);
+                let filename = File.save(openfilename, script);
+                if (filename) {
+                    setFilename(filename);
+                }
                 break;
             case 'Show Guides':
                 setGuidesVisible(e.checked);
@@ -173,20 +123,13 @@ const MainView = (props) => {
     }
 
     const setGuidesVisible = ($yes) => {
-        let styles = ['non_walkover', 'non_moveleft', 'non_moveright', 'non_moveup', 'non_movedown'];
-        styles.forEach(e => {
-            document.querySelectorAll('.' + e).forEach(p => {
-                p.style.borderWidth = $yes ? "3px" : '0px';
 
-            });
-        });
+        let root = document.documentElement;
+        root.style.setProperty('--guide-red', $yes ? "rgba(255, 0, 0, 0.8)" : 'transparent');
+        root.style.setProperty('--guide-blue', $yes ? "#0000ff" : 'transparent');
 
         document.querySelectorAll('.tile_layer_top').forEach(p => {
-            if (p.innerHTML == '-void-') {
-                p.style.color = $yes ? "#fff" : 'transparent';
-            } else {
-                p.style.color = $yes ? "#000" : 'transparent';
-            }
+            p.style.color = $yes ? ((p.innerHTML == '-void-') ? "#fff" : "#000") : 'transparent';
 
         });
     }
@@ -194,14 +137,12 @@ const MainView = (props) => {
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
-            <Elements.ItemForm  {...{ ...props, elements, tileCache, tiledata, setTiles, editItem, setEditItem }} />
+            <Elements.ItemForm  {...{ ...props, elements, tiledata, setTiles, editItem, setEditItem }} />
             <div className="editor">
                 <Elements.ItemPanel {...{
-                    ...props, tileCache, tiledata, setTiles, selectedTiles,
-                    selectedItem, setSelectedItem,
-                    editItem, setEditItem
+                    ...props, elements, tiledata, setTiles, selectedTiles, selectedItem, setSelectedItem, editItem, setEditItem
                 }} />
-                <Elements.MapPanel {...{ ...props, tileCache, tiledata, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem, editItem, setEditItem }} />
+                <Elements.MapPanel {...{ ...props, elements, tiledata, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem, editItem, setEditItem }} />
             </div>
         </div>
     );
