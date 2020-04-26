@@ -6,6 +6,7 @@ const sizeOf = require('image-size');
 
 const querystring = require('querystring');
 const electron = require('electron');
+const clipboardy = require('clipboardy');
 const { remote } = electron;
 const { Menu, MenuItem } = remote;
 

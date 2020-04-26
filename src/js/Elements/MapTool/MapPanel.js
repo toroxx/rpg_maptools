@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from "react";
 import * as Util from '../../Lib/Util';
 import Tile from './Tile';
+import * as MapUtil from './MapUtil';
 
-let copied_object = null;
 let ctrl_pressed = false;
 let ani_clock = {};
 let ani_txtclock = {};
 
 const MapPanel = (props) => {
-    const { elements, tiledata, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem, editItem, setEditItem } = props;
+    const { elements,
+        mapTileOption, setMapTileOption,
+        tiledata, mapdata, setMap,
+        selectedTiles, setSelectedTiles,
+        selectedItem, editItem, setEditItem } = props;
 
     const tileCache = Util.makeTileCache(elements, tiledata);
     const [leveldisplays, setLeveldisplays] = useState({});
@@ -62,9 +66,8 @@ const MapPanel = (props) => {
             }
         }
 
-        let i = -1;
+
         for (let v in tile_ani_layer) {
-            i++;
             console.log('Clock: ' + v, ' start');
             if (ani_txtclock[v] == void (0)) {
                 ani_txtclock[v] = 0;
@@ -76,8 +79,6 @@ const MapPanel = (props) => {
             }, 100);
 
             ani_clock[v] = c;
-
-
         }
         console.log("ani_clock: ", ani_clock);
     }, [tiledata])
@@ -136,10 +137,41 @@ const MapPanel = (props) => {
     function getTile(x, y) {
         return (mapdata && mapdata[y] && mapdata[y][x]) || false;
     }
-    function setTile(x, y, tile) {
-        mapdata[y][x] = tile;
+
+    function setTile(x, y, tileinfo) {
+        let tileData = getTile(x, y);
+        if (!tileData) {
+            mapdata[y][x] = tileinfo;
+        } else {
+
+            if (typeof (tileData) == 'string' && typeof (tileinfo) == 'string') {
+                tileData = { 'TileID': tileinfo };
+            } else {
+                tileData = tileinfo;
+            }
+
+            mapdata[y][x] = tileData;
+        }
         setMap(mapdata);
     }
+    function setTileInfoID(x, y, InfoID) {
+        let tileData = getTile(x, y);
+        if (tileData) {
+            if (typeof (tileData) == 'string') {
+                tileData = { 'TileID': tileData };
+            }
+            if (InfoID != null) {
+                tileData["InfoID"] = InfoID;
+            } else {
+                delete (tileData["InfoID"]);
+            }
+
+            mapdata[y][x] = tileData;
+            setMap(mapdata);
+        }
+
+    }
+
 
     const menu_callback = (action, target) => {
         //console.log(action, target);
@@ -151,142 +183,80 @@ const MapPanel = (props) => {
 
         let empty_row = [];
         for (let i = 0; i < col_items; i++) { empty_row.push('-void-'); }
+        let copied_object = Util.clipboard_read();
 
-        let tmpMap = [];
         switch (action) {
             case 'Insert Row':
                 dialogs.prompt('Insert Row', 1, ok => {
                     if (ok) {
-                        let count = parseInt(ok);
-                        mapdata.forEach((v, py) => {
-                            if (py == y) {
-                                for (let i = 0; i < count; i++) {
-                                    tmpMap.push(empty_row);
-                                }
-                            }
-                            tmpMap.push(v);
-                        })
-                        setMap(tmpMap);
-
+                        let tmpMap = MapUtil.rowInsert(mapdata, y, empty_row, parseInt(ok));
+                        if (tmpMap !== false) { setMap(tmpMap); }
                     }
                 });
 
                 break;
             case 'Append Row':
+
                 dialogs.prompt('Append Row', 1, ok => {
                     if (ok) {
-                        let count = parseInt(ok);
-                        mapdata.forEach((v, py) => {
-                            tmpMap.push(v);
-                            if (py == y) {
-                                for (let i = 0; i < count; i++) {
-                                    tmpMap.push(empty_row);
-                                }
-                            }
-                        })
-                        setMap(tmpMap);
+                        let tmpMap = MapUtil.rowAppend(mapdata, y, empty_row, parseInt(ok));
+                        if (tmpMap !== false) { setMap(tmpMap); }
                     }
                 });
+
                 break;
             case 'Delete Row':
-                mapdata.forEach((v, py) => {
-                    if (py != y) { tmpMap.push(v); }
-                })
-                setMap(tmpMap);
+                setMap(MapUtil.rowRemove(mapdata, y));
                 break;
             case 'Copy Row':
-                copied_object = { type: 'row', name: tilename, value: y };
+                Util.clipboard_write({ type: 'row', name: tilename, value: y });
                 break;
             case 'Paste Row':
-                if (copied_object != null) {
-                    const { type = null, value } = copied_object;
-                    if (type == "row") {
-                        mapdata.forEach((v, py) => {
-                            tmpMap.push((py == y) ? mapdata[value] : v);
-                        })
-                        setMap(tmpMap);
-                    }
+                if (copied_object != null && copied_object['type'] == "row") {
+                    let tmpMap = MapUtil.rowReplace(mapdata, y, copied_object['value']);
+                    setMap(tmpMap);
                 }
                 break;
             case 'Insert Col':
-                dialogs.prompt('Append Col', 1, ok => {
+                dialogs.prompt('Insert Col', 1, ok => {
                     if (ok) {
-                        let count = parseInt(ok);
-
-                        mapdata.forEach((cols, py) => {
-                            let tmp = [];
-                            cols.forEach((col, px) => {
-                                if (px == x) {
-                                    for (let i = 0; i < count; i++) {
-                                        tmp.push('-void-');
-                                    }
-                                }
-                                tmp.push(col);
-                            })
-                            tmpMap.push(tmp);
-                        });
-                        setMap(tmpMap);
+                        let tmpMap = MapUtil.colInsert(mapdata, x, '-void-', parseInt(ok));
+                        if (tmpMap !== false) { setMap(tmpMap); }
                     }
                 });
+
                 break;
             case 'Append Col':
                 dialogs.prompt('Append Col', 1, ok => {
                     if (ok) {
-                        let count = parseInt(ok);
-
-                        mapdata.forEach((cols, py) => {
-                            let tmp = [];
-                            cols.forEach((col, px) => {
-                                tmp.push(col);
-                                if (px == x) {
-                                    for (let i = 0; i < count; i++) {
-                                        tmp.push('-void-');
-                                    }
-                                }
-                            })
-                            tmpMap.push(tmp);
-                        });
-                        setMap(tmpMap);
+                        let tmpMap = MapUtil.colAppend(mapdata, x, '-void-', parseInt(ok));
+                        if (tmpMap !== false) { setMap(tmpMap); }
                     }
                 });
                 break;
             case 'Delete Col':
-                mapdata.forEach((cols, py) => {
-                    let tmp = [];
-                    cols.forEach((col, px) => {
-                        if (px != x) {
-                            tmp.push(col);
-                        }
-                    })
-                    tmpMap.push(tmp);
-                });
-                setMap(tmpMap);
+                setMap(MapUtil.colRemove(mapdata, x));
                 break;
             case 'Copy Col':
-                copied_object = { type: 'col', name: tilename, value: x };
+                Util.clipboard_write({ type: 'col', name: tilename, value: x });
                 break;
             case 'Paste Col':
-                if (copied_object != null) {
-                    const { type = null, value } = copied_object;
-                    if (type == "col") {
-                        mapdata.forEach((cols, py) => {
-                            let tmp = [];
-                            cols.forEach((col, px) => {
-                                tmp.push((px == x) ? cols[value] : col);
-                            })
-                            tmpMap.push(tmp);
-                        });
-                        setMap(tmpMap);
-                    }
+                if (copied_object != null && copied_object['type'] == "col") {
+                    let tmpMap = MapUtil.colReplace(mapdata, y, copied_object['value']);
+                    setMap(tmpMap);
+
                 }
                 break;
             case 'Copy Tile':
-                copied_object = { type: 'tile', name: tilename, value: target.getAttribute('data-tile_id') };
+                Util.clipboard_write({ type: 'tile', name: tilename, value: mapdata[y][x] });
+                console.log('Copy Tile', mapdata[y][x]);
                 break;
             case 'Paste Tile':
                 if (copied_object != null) {
                     const { type = null, value } = copied_object;
+
                     if (type == "tile") {
+                        console.log('Copy Tile', value)
                         setTile(x, y, value);
                     }
                 }
@@ -310,6 +280,7 @@ const MapPanel = (props) => {
         menu4top.append(new MenuItem({ type: 'separator' }))
         menu4top.append(new MenuItem({ label: 'Copy Col', click: () => { menu_callback('Copy Col', node) } }))
 
+        let copied_object = Util.clipboard_read();
         if (copied_object != null) {
             const { type = null, name } = copied_object;
             if (type == "col") {
@@ -332,6 +303,8 @@ const MapPanel = (props) => {
         menu4left.append(new MenuItem({ label: 'Delete Row', click: () => { menu_callback('Delete Row', node) } }))
         menu4left.append(new MenuItem({ type: 'separator' }))
         menu4left.append(new MenuItem({ label: 'Copy Row', click: () => { menu_callback('Copy Row', node) } }))
+
+        let copied_object = Util.clipboard_read();
         if (copied_object != null) {
             const { type = null, name } = copied_object;
             if (type == "row") {
@@ -342,28 +315,103 @@ const MapPanel = (props) => {
     }
 
 
-    function tile_menu(e) {
-        e.preventDefault()
+    function tile_menu(target) {
 
-        const node = e.target.parentNode.parentNode;
+        const node = target;
         let tilename = node.getAttribute('data-tilename');
-        let tileid = node.getAttribute('data-tile_id');
+        let tile_id = node.getAttribute('data-tile_id');
+        let info_id = node.getAttribute('data-info_id');
+        let data_x = node.getAttribute('data-x');
+        let data_y = node.getAttribute('data-y');
+        if (tilename == null) {
+            return;
+        }
         const menu4tile = new Menu()
+
         menu4tile.append(new MenuItem({ label: tilename, enabled: false }))
+        menu4tile.append(new MenuItem({ type: 'separator' }))
+
+
+        menu4tile.append(new MenuItem({
+            label: 'Info ID' + (info_id != null ? ` (${info_id})` : ""), click: () => {
+                dialogs.prompt("Info ID", info_id, ok => {
+                    if (ok != void (0) && ok != "") {
+                        info_id = ok;
+
+                        console.log('set InfoID:', data_x, data_y, ok);
+                        let tmp = mapTileOption;
+                        if (mapTileOption[info_id] == void (0)) {
+                            mapTileOption[info_id] = {
+                                autostart_ani: false, entrypoint: false, framePerLoop: 10,
+                            };
+                        }
+                        console.log('mapTileOption:', mapTileOption);
+                        //mapTileOption[info_id] = ok;
+                        setTileInfoID(data_x, data_y, ok);
+
+                        setMapTileOption({ ...tmp });
+                    }
+                })
+            }
+        }))
+
+        if (mapTileOption[info_id] != void (0)) {
+            let { autostart_ani = false, entrypoint = false, framePerLoop = 10 } = mapTileOption[info_id];
+
+
+            menu4tile.append(new MenuItem({
+                type: 'checkbox',
+                label: 'Auto Start Animate',
+                checked: autostart_ani,
+                click: () => {
+                    mapTileOption[info_id]['autostart_ani'] = !autostart_ani;
+                    setMapTileOption({ ...mapTileOption });
+                }
+            }))
+            menu4tile.append(new MenuItem({
+                label: `Animate FramePerLoop (${framePerLoop})`, click: () => {
+                    dialogs.prompt("Animate FramePerLoop", framePerLoop, ok => {
+                        if (ok != void (0) && ok != "") {
+                            mapTileOption[info_id]['framePerLoop'] = parseInt(ok);
+                            setMapTileOption({ ...mapTileOption });
+                        }
+                    })
+                }
+            }))
+
+            menu4tile.append(new MenuItem({
+                type: 'checkbox',
+                label: 'Set EntryPoint',
+                checked: entrypoint,
+                click: () => {
+                    mapTileOption[info_id]['entrypoint'] = !entrypoint;
+                    setMapTileOption({ ...mapTileOption });
+                }
+            }));
+        }
+
+
         menu4tile.append(new MenuItem({ type: 'separator' }))
         menu4tile.append(new MenuItem({ label: 'Copy Tile', click: () => { menu_callback('Copy Tile', node) } }))
 
-        if (tileid != "" && tileid != "-void-") {
+        if (tile_id != "" && tile_id != "-void-") {
 
-            menu4tile.append(new MenuItem({ label: 'Edit Tile', click: () => { setEditItem(tileid) } }))
+            menu4tile.append(new MenuItem({ label: 'Edit Tile', click: () => { setEditItem(tile_id) } }))
         }
 
+        let copied_object = Util.clipboard_read();
         if (copied_object != null) {
             const { type = null, name } = copied_object;
             if (type == "tile") {
                 menu4tile.append(new MenuItem({ label: 'Paste Tile (' + name + ')', click: () => { menu_callback('Paste Tile', node) } }))
             }
         }
+        menu4tile.append(new MenuItem({ type: 'separator' }))
+        menu4tile.append(new MenuItem({
+            label: 'Copy JSON', click: () => {
+                Util.clipboard_write(JSON.stringify({ 'type': 'tiledata', name: tile_id, value: tiledata[params] }));
+            }
+        }))
         menu4tile.popup({ window: remote.getCurrentWindow() })
     }
 
@@ -401,12 +449,12 @@ const MapPanel = (props) => {
     }
 
 
-    function makeTile(tile_id, x, y) {
-        return (<Tile key={`tile_${x}_${y}`} tile_id={tile_id} tile={tileCache[tile_id]} x={x} y={y}
-            onClick={(e) => {
-                if (e.target && e.target.parentNode && e.target.parentNode.parentNode) {
-                    select_tile(e.target.parentNode.parentNode, x, y);
-                }
+    function makeTile(tiledata, x, y) {
+        return (<Tile key={`tile_${x}_${y}`} tiledata={tiledata} tileCache={tileCache} x={x} y={y}
+            onClick={(target) => {
+
+                console.log(target);
+                select_tile(target, x, y);
 
                 if (selectedItem != null) {
                     setTile(x, y, selectedItem);
@@ -415,6 +463,8 @@ const MapPanel = (props) => {
             onContextMenu={(e) => tile_menu(e)}
         />);
     }
+
+
     return (
 
         <div className="map_panel">
@@ -450,7 +500,6 @@ const MapPanel = (props) => {
                             onContextMenu={(e) => header_top_menu(e)}>{x}</div>);
                     })}
                 </div>
-
                 <div className="row heading-left">
                     {mapdata.map((col, y) => (
                         <div key={`header_row_${y}`} data-y={y} data-tilename={'row-' + y} className="col tile_head_left"
@@ -467,7 +516,7 @@ const MapPanel = (props) => {
                 </div>
 
                 {mapdata.map((col, y) => (<div key={`row_${y}`} className="row">
-                    {col.map((tile_id, x) => makeTile(tile_id, x, y))}
+                    {col.map((tiledata, x) => makeTile(tiledata, x, y))}
                 </div>))}
             </div>
         </div>

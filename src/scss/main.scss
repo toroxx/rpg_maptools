@@ -6,6 +6,8 @@
   --map-panel-header-left-width: 20px;
   --tile-size: 65px;
   --panel-header: 30px;
+  --tile-caption-color: #fff;
+  --tile-caption-stroke-color: #000;
 }
 
 html {
@@ -45,7 +47,7 @@ body {
   $width: 700px;
   $height: 400px;
 
-  z-index: 30000;
+  z-index: 8000;
   position: absolute;
   background-color: #fff;
   width: $width;
@@ -93,12 +95,41 @@ body {
       z-index: $i * 10;
     }
   }
-
-  .tile_layer_top {
-    z-index: 10000;
+  .tile_info_layer {
     width: 100%;
     height: 100%;
+    z-index: 5100;
+    table {
+      width: 100%;
+      height: 100%;
+      font-size: 8px;
+
+      color: var(--tile-caption-color);
+
+      text-shadow: 0 0 4px var(--tile-caption-stroke-color),
+        0 0 4px var(--tile-caption-stroke-color),
+        0 0 4px var(--tile-caption-stroke-color),
+        0 0 4px var(--tile-caption-stroke-color);
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .tile_layer_top {
+    font-weight: bold;
+    font-size: 8px;
+    z-index: 5000;
+    width: 100%;
+    height: 100%;
+    color: var(--tile-caption-color);
+
+    text-shadow: 0 0 4px var(--tile-caption-stroke-color),
+      0 0 4px var(--tile-caption-stroke-color),
+      0 0 4px var(--tile-caption-stroke-color),
+      0 0 4px var(--tile-caption-stroke-color);
+    letter-spacing: 0.5px;
+
     div {
+      padding: 2px;
       width: 100%;
       height: 100%;
     }
@@ -271,8 +302,53 @@ $direction: (
   top: 0px;
   left: 0;
   position: absolute;
-  z-index: 20000;
+  z-index: 7000;
   background-color: blue;
   color: #fff;
   clear: both;
+}
+
+.tile_selector {
+  --selector-tile-size: 50px;
+
+  width: 90%;
+  height: calc(var(--tile-size) + 10px);
+  resize: both;
+  clear: both;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid #000;
+
+  .selector_tile {
+    position: relative;
+    border: 1px solid #000;
+    width: var(--selector-tile-size);
+    height: var(--selector-tile-size);
+    display: block;
+    float: left;
+    padding: 0px;
+    overflow: hidden;
+
+    & > img {
+      --selector-tile-x: 0;
+      --selector-tile-y: 0;
+
+      position: absolute;
+    }
+
+    & > div {
+      position: absolute;
+      font-size: 8px;
+      font-weight: bold;
+      width: 100%;
+      height: 100%;
+    }
+
+    &.selected {
+      border: 1px solid #f00;
+      & > div {
+        background-color: rgba(255, 0, 0, 0.2);
+      }
+    }
+  }
 }

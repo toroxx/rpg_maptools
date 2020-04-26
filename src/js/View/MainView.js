@@ -10,11 +10,11 @@ const menu_template = (menu_callback, opened_files) => {
     let i = 1;
     for (let k in opened_files) {
         let { path } = opened_files[k];
-        opened.push({ label: i + ". " + path, click: (e) => { menu_callback('OpenFile', e, path) }});
+        opened.push({ label: i + ". " + path, click: (e) => { menu_callback('OpenFile', e, path) } });
         i++;
     }
     if (opened.length == 0) {
-        opened.push({ label: 'No Recent File', disabled:true });
+        opened.push({ label: 'No Recent File', disabled: true });
     }
 
     const isMac = process.platform === 'darwin';
@@ -72,11 +72,15 @@ const MainView = (props) => {
     const { elements, db } = props;
     const DEFAULT_MAP = [['-void-', '-void-'], ['-void-', '-void-']];
     const DEFAULT_ITEM = { "-void-": { layers: null } };
+    const DEFAULT_MAPTILE_OPTION = {};
+
     const DEFAULT_FILENAME = 'map.json';
     const [openfilename, setFilename] = useState(DEFAULT_FILENAME);
 
     const [mapdata, setMapData] = useState(DEFAULT_MAP);
+    const [mapTileOption, setMapTileOption] = useState(DEFAULT_MAPTILE_OPTION);
     const [tiledata, setTileData] = useState(DEFAULT_ITEM);
+
     const [selectedItem, setSelectedItem] = useState(null);
     const [editItem, setEditItem] = useState(null);
     const [selectedTiles, setSelectedTiles] = useState([]);
@@ -105,8 +109,8 @@ const MainView = (props) => {
     }, [openfilename]);
 
     useEffect(() => {
-        window.save_data = { map: mapdata, item: tiledata };
-    }, [mapdata, tiledata]);
+        window.save_data = { map: mapdata, item: tiledata, mapTileOption };
+    }, [mapdata, tiledata,mapTileOption]);
 
 
     const menu_callback = (mode, e, params = {}) => {
@@ -124,10 +128,13 @@ const MainView = (props) => {
                 const result = File.load();
                 if (result) {
                     const [filepath, filename, mapjson] = result;
-                    const { map = DEFAULT_MAP, item = DEFAULT_ITEM } = JSON.parse(mapjson);
+                    const {
+                        map = DEFAULT_MAP, item = DEFAULT_ITEM,
+                        mapTileOption = DEFAULT_MAPTILE_OPTION } = JSON.parse(mapjson);
                     setFilename(filename);
                     setMap(map);
                     setTiles(item);
+                    setMapTileOption({ ...mapTileOption })
                     setEditItem(null);
                     //db.save()
                 }
@@ -151,22 +158,28 @@ const MainView = (props) => {
         let root = document.documentElement;
         root.style.setProperty('--guide-red', $yes ? "rgba(255, 0, 0, 0.8)" : 'transparent');
         root.style.setProperty('--guide-blue', $yes ? "#0000ff" : 'transparent');
+        root.style.setProperty('--tile-caption-color', $yes ? "#fff" : 'transparent');
+        root.style.setProperty('--tile-caption-stroke-color', $yes ? "#000" : 'transparent');
 
-        document.querySelectorAll('.tile_layer_top').forEach(p => {
-            p.style.color = $yes ? ((p.innerHTML == '-void-') ? "#fff" : "#000") : 'transparent';
-
-        });
     }
 
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
-            <Elements.ItemForm  {...{ ...props, elements, tiledata, setTiles, editItem, setEditItem }} />
+            <Elements.ItemForm  {...{
+                ...props,
+                elements, tiledata, setTiles, editItem, setEditItem
+            }} />
             <div className="editor">
                 <Elements.ItemPanel {...{
-                    ...props, elements, tiledata, setTiles, selectedTiles, selectedItem, setSelectedItem, editItem, setEditItem
+                    ...props,
+                    elements, tiledata, setTiles, selectedTiles, selectedItem, setSelectedItem, editItem, setEditItem
                 }} />
-                <Elements.MapPanel {...{ ...props, elements, tiledata, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem, editItem, setEditItem }} />
+                <Elements.MapPanel {...{
+                    ...props,
+                    mapTileOption, setMapTileOption,
+                    elements, tiledata, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem, editItem, setEditItem
+                }} />
             </div>
         </div>
     );

@@ -4,6 +4,25 @@ const rootpath = ele_app.getAppPath();
 
 const assets_path = window.env.ASSETS_PATH || '';
 
+
+export function closest(el, sel) {
+    if (el != null)
+        return el.matches(sel) ? el
+            : (el.querySelector(sel)
+                || closest(el.parentNode, sel));
+}
+
+export function clipboard_read() {
+    try {
+        return JSON.parse(clipboardy.readSync());
+    } catch (e) { }
+    return null;
+}
+export function clipboard_write(data) {
+    return clipboardy.writeSync(JSON.stringify(data));
+}
+
+
 export function preload_img(filepath, callback) {
     const img = document.createElement('img');
     document.body.appendChild(img);
@@ -98,13 +117,8 @@ export function makeTileLayers(elements, k, i) {
 
     let effclass = tileOptionClasses([], i)
     html.push(['top', () => {
-
-        return <div style={{
-            fontWeight: 'bold', 'fontSize': '8px', 'color': k == '-void-' ? '#fff' : '#000',
-            'width': '100%', 'height': '100%', zIndex: 9900
-        }}
-            key={'tile_layer_top'} title={`${k}\n${effclass}${layers_text}`} className={[...effclass, "tile_layers", "tile_layer_top"].join(' ')} >
-            <div style={{ padding: '2px' }}>{k}</div>
+        return <div key={'tile_layer_top'} title={`${k}\n${effclass}${layers_text}`} className={[...effclass, "tile_layers", "tile_layer_top"].join(' ')} >
+            <div>{k}</div>
         </div>
     }]);
     return html;

@@ -1,121 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import * as Util from '../Lib/Util';
+import * as Util from '../../Lib/Util';
+import ItemLayer from './ItemLayer';
+
 const { getCurrentWindow, dialog } = electron.remote;
 
 let options = {
     'walkover': 0, 'movedown': 1, 'moveleft': 1, 'moveup': 1, 'moveright': 1,
-    'autostart_ani': 0, 'eventdown': 0, 'eventleft': 0, 'eventup': 0, 'eventright': 0
+    'eventdown': 0, 'eventleft': 0, 'eventup': 0, 'eventright': 0
 };
-
-
-
-const ItemTileSelector = (props) => {
-    let { elements, txtbg, txtid, setID } = props;
-
-
-    let tile_size = 50;
-
-    useEffect(() => {
-        console.log('Loading: ', txtbg);
-    }, [txtbg, txtid]);
-
-    function load() {
-        let html = [];
-        if (elements[txtbg] == void (0)) {
-            return html;
-        }
-
-        let { width, height, wCount, hCount, getScale } = elements[txtbg];
-
-        for (let j = 0; j < hCount; j++) {
-
-            for (let i = 0; i < wCount; i++) {
-                const key = i + (j * wCount);
-                html.push(<div key={key} className={'t' + key}
-                    style={{
-                        border: txtid == key ? '1px solid #f00' : '1px solid #000',
-                        'float': 'left',
-                        'display': 'inline-block', position: 'relative',
-                        width: tile_size + 'px', height: tile_size + 'px', padding: '0px', overflow: 'hidden'
-                    }}
-                    onClick={() => setID(key)} >
-
-                    <img style={{
-                        position: 'absolute', width: width * getScale(tile_size) + 'px',
-                        left: '-' + (i * tile_size) + 'px', top: '-' + (j * tile_size) + 'px'
-                    }} src={elements[txtbg] && elements[txtbg]['path'] || null} />
-
-                    <div style={{
-                        position: 'absolute', fontSize: '8px', fontWeight: 'bold', width: '100%',
-                        height: "100%", backgroundColor: txtid == key ? 'rgba(255, 0, 0, 0.2)' : null
-                    }}>
-                        ID: {key}-{j}:{i}
-                    </div>
-                </div>)
-            }
-        }
-        return html;
-    }
-
-    return (
-        <div className="tile_selector" style={{
-            'width': '90%', resize: 'both', 'clear': 'both',
-            overflowX: 'hidden', overflowY: 'auto', 'height': '60px', border: '1px solid #000'
-        }}>{load()}</div>
-    );
-}
-
-
-const ItemLayer = (props) => {
-    let { index, elements, layer, setTileLayer, removeTileLayer } = props;
-
-    const { bg, id = 0, zIndex = 1, name = "", ani = "" } = layer;
-    let [txtbg, setBg] = useState(bg);
-    let [txtid, setID] = useState(id);
-    let [txtname, setName] = useState(name);
-    let [txtzIndex, setZIndex] = useState(zIndex);
-    let [txtani, setAni] = useState(ani);
-
-    useEffect(() => {
-        console.log('savelayer', txtbg, txtid, txtzIndex, txtani);
-        setTileLayer(index, {
-            bg: txtbg, id: txtid, zIndex: txtzIndex, name: txtname,
-            ani: txtani
-        });
-    }, [txtbg, txtid, txtzIndex, txtname, txtani]);
-
-    return (<div className="layer">
-        BG:&nbsp;
-        <select className="bg" defaultValue={txtbg} onChange={(e) => {
-            if (e.target.value != '') { setBg(e.target.value) }
-        }} >
-            <option></option>
-            {Object.keys(elements).map((k2) => {
-                return (<option key={k2}>{k2}</option>);
-            })};
-        </select>
-        TileID:&nbsp;
-        <input style={{ width: '50px' }} type="text" className="id"
-            value={txtid} onChange={(e) => setID(e.target.value)} />
-
-        zIndex:&nbsp;
-        <input style={{ width: '50px' }} type="text" className="zIndex"
-            value={txtzIndex} onChange={(e) => setZIndex(e.target.value)} />
-
-        Name:&nbsp;
-        <input style={{ width: '50px' }} type="text" className="name"
-            value={txtname} onChange={(e) => setName(e.target.value)} />
-
-        Ani Frm:&nbsp;
-        <input style={{ width: '50px' }} type="text" className="ani"
-            value={txtani} onChange={(e) => setAni(e.target.value)} />
-
-
-
-        <button onClick={() => removeTileLayer(index)}>Del</button>
-        <ItemTileSelector elements={elements} txtbg={txtbg} txtid={txtid} setID={setID} />
-    </div>);
-}
 
 
 const ItemForm = (props) => {
