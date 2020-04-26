@@ -2,18 +2,6 @@ import React, { useState, useEffect } from "react";
 import * as Util from '../../Lib/Util';
 import Tile from './Tile';
 
-let resizebar_clicked = false;
-
-let root = document.documentElement;
-
-root.addEventListener("mousemove", e => {
-    if (e.which == 1 && resizebar_clicked) {
-        if (e.clientX > 200 && e.clientX < window.innerWidth * 0.8) {
-            root.style.setProperty('--items-panel-width', e.clientX + "px");
-        }
-
-    }
-});
 
 const ItemPanel = (props) => {
     const { elements, tiledata, setTiles, selectedTiles, setSelectedItem, editItem, setEditItem } = props;
@@ -133,9 +121,6 @@ const ItemPanel = (props) => {
                     return tile_item(k, tiledata[k]);
                 })}
             </div>
-
-            <div className="resizebar" onMouseDown={(e) => { resizebar_clicked = true; }}
-                onMouseUp={(e) => { resizebar_clicked = false; }}>&nbsp;</div>
         </div>
     );
 }

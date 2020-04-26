@@ -4,6 +4,19 @@ import * as Util from '../Lib/Util';
 import * as Elements from "../Elements";
 const { getCurrentWindow, Menu } = electron.remote;
 
+let resizebar_clicked = false;
+
+let root = document.documentElement;
+
+root.addEventListener("mousemove", e => {
+    if (e.which == 1 && resizebar_clicked) {
+        if (e.clientX > 200 && e.clientX < window.innerWidth * 0.8) {
+            root.style.setProperty('--items-panel-width', e.clientX + "px");
+        }
+
+    }
+});
+
 const menu_template = (menu_callback, opened_files) => {
 
     let opened = [];
@@ -110,7 +123,7 @@ const MainView = (props) => {
 
     useEffect(() => {
         window.save_data = { map: mapdata, item: tiledata, mapTileOption };
-    }, [mapdata, tiledata,mapTileOption]);
+    }, [mapdata, tiledata, mapTileOption]);
 
 
     const menu_callback = (mode, e, params = {}) => {
@@ -166,20 +179,35 @@ const MainView = (props) => {
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
-            <Elements.ItemForm  {...{
-                ...props,
-                elements, tiledata, setTiles, editItem, setEditItem
-            }} />
+
+
             <div className="editor">
-                <Elements.ItemPanel {...{
-                    ...props,
-                    elements, tiledata, setTiles, selectedTiles, selectedItem, setSelectedItem, editItem, setEditItem
-                }} />
+                <div className="menu_panel">
+                    <Elements.ItemPanel {...{
+                        ...props,
+                        elements, tiledata, setTiles, selectedTiles, selectedItem, setSelectedItem, editItem, setEditItem
+                    }} />
+
+                    <Elements.TileInfoPanel {...{
+                        ...props, mapTileOption, setMapTileOption,
+                    }} />
+                    <div className="resizebar" onMouseDown={(e) => { resizebar_clicked = true; }}
+                        onMouseUp={(e) => { resizebar_clicked = false; }}>&nbsp;</div>
+                </div>
                 <Elements.MapPanel {...{
                     ...props,
                     mapTileOption, setMapTileOption,
                     elements, tiledata, mapdata, setMap, selectedTiles, setSelectedTiles, selectedItem, editItem, setEditItem
                 }} />
+            </div>
+
+
+            <div className="forms" >
+                <Elements.ItemForm  {...{
+                    ...props,
+                    elements, tiledata, setTiles, editItem, setEditItem
+                }} />
+
             </div>
         </div>
     );

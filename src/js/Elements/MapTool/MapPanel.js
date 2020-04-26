@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import * as Util from '../../Lib/Util';
 import Tile from './Tile';
 import * as MapUtil from './MapUtil';
+import AnimateClock from '../AnimateClock';
 
 let ctrl_pressed = false;
-let ani_clock = {};
-let ani_txtclock = {};
+
 
 const MapPanel = (props) => {
     const { elements,
@@ -29,82 +29,8 @@ const MapPanel = (props) => {
     }, []);
 
     useEffect(() => {
-        console.log('ani_clock:', ani_clock);
-        for (let k in ani_clock) {
-            clearInterval(ani_clock[k]);
-
-        }
-        ani_clock = {};
-        ani_txtclock = {};
-        console.log('Clocks clear');
-
-        let tile_ani_layer = {};
-        for (let v in tiledata) {
-
-            let { autostart_ani, layers } = tiledata[v];
-            if (autostart_ani == false || autostart_ani == void (0)) {
-                continue;
-            }
-
-            let anilayers = {};
-            for (let layer_index in layers) {
-                let { name = "", ani = "" } = layers[layer_index];
-                if (name == "" || ani == "") {
-                    continue;
-                }
-                anilayers[ani] = layers[layer_index];
-            }
-
-
-
-            if (Object.keys(anilayers).length > 1) {
-                const ordered = {};
-                Object.keys(anilayers).sort((a, b) => a.ani - b.ani).forEach(function (key) {
-                    ordered[key] = anilayers[key];
-                });
-                tile_ani_layer[v] = { layers: ordered, current: 1, total: Object.keys(anilayers).length };
-            }
-        }
-
-
-        for (let v in tile_ani_layer) {
-            console.log('Clock: ' + v, ' start');
-            if (ani_txtclock[v] == void (0)) {
-                ani_txtclock[v] = 0;
-            }
-
-            let c = setInterval(() => {
-                ani_callback(tile_ani_layer[v], v, ani_txtclock[v]);
-                ani_txtclock[v] = (ani_txtclock[v] + 1) % 10;
-            }, 100);
-
-            ani_clock[v] = c;
-        }
-        console.log("ani_clock: ", ani_clock);
-    }, [tiledata])
-
-
-    function ani_callback(tile_ani_layer, v, txtClock) {
-        let { layers, current, total } = tile_ani_layer;
-        let anis = {};
-        let closest = 0;
-        for (let k in layers) {
-            let { name, ani } = layers[k];
-            ani = parseInt(ani);
-            anis[ani] = name;
-
-            if (txtClock > ani) {
-                closest = ani;
-            }
-
-        }
-        for (let ani in anis) {
-            document.querySelector('.tiles').querySelectorAll('.tile.' + v + ' .' + anis[ani]).forEach(e => {
-                e.style.display = ani == closest ? 'block' : 'none';
-            });
-        }
-
-    }
+        new AnimateClock(mapdata, tiledata, mapTileOption);
+    }, [mapdata, tiledata, mapTileOption])
 
 
     useEffect(() => {
@@ -315,9 +241,8 @@ const MapPanel = (props) => {
     }
 
 
-    function tile_menu(target) {
+    function tile_menu(node) {
 
-        const node = target;
         let tilename = node.getAttribute('data-tilename');
         let tile_id = node.getAttribute('data-tile_id');
         let info_id = node.getAttribute('data-info_id');
@@ -335,22 +260,29 @@ const MapPanel = (props) => {
         menu4tile.append(new MenuItem({
             label: 'Info ID' + (info_id != null ? ` (${info_id})` : ""), click: () => {
                 dialogs.prompt("Info ID", info_id, ok => {
-                    if (ok != void (0) && ok != "") {
-                        info_id = ok;
 
+                    if (ok == void (0)) {
+                        return;
+                    }
+                    info_id = ok;
+
+                    let tmp = mapTileOption;
+                    if (ok != "") {
                         console.log('set InfoID:', data_x, data_y, ok);
-                        let tmp = mapTileOption;
+
                         if (mapTileOption[info_id] == void (0)) {
                             mapTileOption[info_id] = {
                                 autostart_ani: false, entrypoint: false, framePerLoop: 10,
                             };
                         }
                         console.log('mapTileOption:', mapTileOption);
-                        //mapTileOption[info_id] = ok;
-                        setTileInfoID(data_x, data_y, ok);
-
-                        setMapTileOption({ ...tmp });
                     }
+
+                    //mapTileOption[info_id] = ok;
+                    setTileInfoID(data_x, data_y, ok == "" ? null : ok);
+
+                    setMapTileOption({ ...tmp });
+
                 })
             }
         }))

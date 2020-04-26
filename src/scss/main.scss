@@ -245,17 +245,11 @@ $direction: (
   height: 100%;
 }
 
-.items_panel {
-  resize: horizontal;
-  padding-top: var(--panel-header);
+.menu_panel {
   position: relative;
   float: left;
   width: var(--items-panel-width);
   height: 100%;
-
-  .itemlist {
-    width: calc(100% - 3px);
-  }
 
   .resizebar {
     position: absolute;
@@ -265,6 +259,30 @@ $direction: (
     cursor: col-resize;
     width: 3px;
     background-color: #000;
+  }
+
+  .items_panel {
+    height: 60%;
+    position: relative;
+    .title_bar {
+      position: static;
+    }
+    .itemlist {
+      width: calc(100% - 3px);
+      height: calc(100% - var(--panel-header));
+    }
+  }
+
+  .tileinfo_panel {
+    height: 40%;
+    position: relative;
+    .title_bar {
+      position: static;
+    }
+    .itemlist {
+      width: calc(100% - 3px);
+      height: calc(100% - var(--panel-header));
+    }
   }
 }
 
