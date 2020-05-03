@@ -70,12 +70,17 @@ const MapPanel = (props) => {
             mapdata[y][x] = tileinfo;
         } else {
 
-            if (typeof (tileData) == 'string' && typeof (tileinfo) == 'string') {
-                tileData = { 'TileID': tileinfo };
-            } else {
-                tileData = tileinfo;
+            let tmpTileInfo = { 'TileID': tileinfo };
+            if (typeof (tileinfo) == 'object') {
+                tmpTileInfo = tileinfo;
             }
 
+            if (typeof (tileData) == 'string') {
+                tileData = { 'TileID': tileData };
+            }
+            tileData = { ...tileData, ...tmpTileInfo };
+
+            console.log('setTile', tileData, tileinfo);
             mapdata[y][x] = tileData;
         }
         setMap(mapdata);
@@ -83,6 +88,7 @@ const MapPanel = (props) => {
     function setTileInfoID(x, y, InfoID) {
         let tileData = getTile(x, y);
         if (tileData) {
+
             if (typeof (tileData) == 'string') {
                 tileData = { 'TileID': tileData };
             }
@@ -385,7 +391,7 @@ const MapPanel = (props) => {
         return (<Tile key={`tile_${x}_${y}`} tiledata={tiledata} tileCache={tileCache} x={x} y={y}
             onClick={(target) => {
 
-                console.log(target);
+                console.log('makeTile onClick', selectedItem, x, y);
                 select_tile(target, x, y);
 
                 if (selectedItem != null) {
@@ -410,7 +416,7 @@ const MapPanel = (props) => {
             <div className="tiles" onScroll={(e) => {
                 document.querySelector(".tiles .heading").style.left = -(e.target.scrollLeft) + 'px';
                 document.querySelector(".tiles .heading-left").style.top = -(e.target.scrollTop - e.target.offsetTop) + 'px';
-                console.log(e.target.scrollTop, e.target.scrollLeft);
+                //console.log(e.target.scrollTop, e.target.scrollLeft);
             }}>
 
 
