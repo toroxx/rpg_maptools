@@ -1,6 +1,9 @@
 # RPG Maptools
 Maptools for create RPG map in JSON format
 
+![Maptools Window](resources/img/md_maptools.png)
+
+
 # Setup 
 Change the ASSETS_PATH to the rpg assets to load the tile images
 
